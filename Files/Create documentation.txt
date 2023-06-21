@@ -1,0 +1,223 @@
+As a senior .net developer you have to write xml documentation for the class.
+Document all public entries in the specified source code (public properties, variables, functions, and methods).
+The documentation should reside in the source code and follow a built-in language documentation comments syntax (like https://learn.microsoft.com/en-us/dotnet/csharp/language-reference/language-specification/documentation-comments for C#).
+The documentation should be easy to understand, with clear explanations of the code's purpose, functionality, and behavior.
+The documentation should accurately describe the code's behavior, functionality, and any limitations or constraints.
+Method, function, and class documentation should include clear descriptions of all parameters, their types, and expected return values.
+
+public class WatchFolderManager : IDisposable
+    {
+        public List<WatchFolder> WatchFolders { get; private set; }
+
+        public void UpdateWatchFolders()
+        {
+            if (WatchFolders != null)
+            {
+                UnregisterAllWatchFolders();
+            }
+
+            WatchFolders = new List<WatchFolder>();
+
+            foreach (WatchFolderSettings defaultWatchFolderSetting in Program.DefaultTaskSettings.WatchFolderList)
+            {
+                AddWatchFolder(defaultWatchFolderSetting, Program.DefaultTaskSettings);
+            }
+
+            foreach (HotkeySettings hotkeySetting in Program.HotkeysConfig.Hotkeys)
+            {
+                foreach (WatchFolderSettings watchFolderSetting in hotkeySetting.TaskSettings.WatchFolderList)
+                {
+                    AddWatchFolder(watchFolderSetting, hotkeySetting.TaskSettings);
+                }
+            }
+        }
+
+        private WatchFolder FindWatchFolder(WatchFolderSettings watchFolderSetting)
+        {
+            return WatchFolders.FirstOrDefault(watchFolder => watchFolder.Settings == watchFolderSetting);
+        }
+
+        private bool IsExist(WatchFolderSettings watchFolderSetting)
+        {
+            return FindWatchFolder(watchFolderSetting) != null;
+        }
+
+        public void AddWatchFolder(WatchFolderSettings watchFolderSetting, TaskSettings taskSettings)
+        {
+            if (!IsExist(watchFolderSetting))
+            {
+                if (!taskSettings.WatchFolderList.Contains(watchFolderSetting))
+                {
+                    taskSettings.WatchFolderList.Add(watchFolderSetting);
+                }
+
+                WatchFolder watchFolder = new WatchFolder();
+                watchFolder.Settings = watchFolderSetting;
+                watchFolder.TaskSettings = taskSettings;
+
+                watchFolder.FileWatcherTrigger += origPath =>
+                {
+                    TaskSettings taskSettingsCopy = TaskSettings.GetSafeTaskSettings(taskSettings);
+                    string destPath = origPath;
+
+                    if (watchFolderSetting.MoveFilesToScreenshotsFolder)
+                    {
+                        string screenshotsFolder = TaskHelpers.GetScreenshotsFolder(taskSettingsCopy);
+                        string fileName = Path.GetFileName(origPath);
+                        destPath = TaskHelpers.HandleExistsFile(screenshotsFolder, fileName, taskSettingsCopy);
+                        FileHelpers.CreateDirectoryFromFilePath(destPath);
+                        File.Move(origPath, destPath);
+                    }
+
+                    UploadManager.UploadFile(destPath, taskSettingsCopy);
+                };
+
+                WatchFolders.Add(watchFolder);
+
+                if (taskSettings.WatchFolderEnabled)
+                {
+                    watchFolder.Enable();
+                }
+            }
+        }
+
+        public void RemoveWatchFolder(WatchFolderSettings watchFolderSetting)
+        {
+            using (WatchFolder watchFolder = FindWatchFolder(watchFolderSetting))
+            {
+                if (watchFolder != null)
+                {
+                    watchFolder.TaskSettings.WatchFolderList.Remove(watchFolderSetting);
+                    WatchFolders.Remove(watchFolder);
+                }
+            }
+        }
+
+        public void UpdateWatchFolderState(WatchFolderSettings watchFolderSetting)
+        {
+            WatchFolder watchFolder = FindWatchFolder(watchFolderSetting);
+            if (watchFolder != null)
+            {
+                if (watchFolder.TaskSettings.WatchFolderEnabled)
+                {
+                    watchFolder.Enable();
+                }
+                else
+                {
+                    watchFolder.Dispose();
+                }
+            }
+        }
+
+        public void UnregisterAllWatchFolders()
+        {
+            if (WatchFolders != null)
+            {
+                foreach (WatchFolder watchFolder in WatchFolders)
+                {
+                    if (watchFolder != null)
+                    {
+                        watchFolder.Dispose();
+                    }
+                }
+            }
+        }
+
+        public void Dispose()
+        {
+            UnregisterAllWatchFolders();
+        }
+    }
+	
+	
+	
+	
+	
+	
+	
+	
+	
+/// <summary>
+/// Manages the lifecycle and operation of folders being watched for changes.
+/// </summary>
+public class WatchFolderManager : IDisposable
+{
+    /// <summary>
+    /// Gets the list of watch folders currently managed by this instance.
+    /// </summary>
+    public List<WatchFolder> WatchFolders { get; private set; }
+
+    /// <summary>
+    /// Updates the watch folders by unregistering existing folders and re-registering them with new settings. 
+    /// Also adds new watch folders associated with hotkey settings.
+    /// </summary>
+    public void UpdateWatchFolders()
+    {
+        //...
+    }
+
+    /// <summary>
+    /// Finds the watch folder corresponding to the provided settings.
+    /// </summary>
+    /// <param name="watchFolderSetting">Settings of the watch folder to find.</param>
+    /// <returns>The <see cref="WatchFolder"/> if it exists, otherwise null.</returns>
+    private WatchFolder FindWatchFolder(WatchFolderSettings watchFolderSetting)
+    {
+        //...
+    }
+
+    /// <summary>
+    /// Checks if a watch folder corresponding to the provided settings exists.
+    /// </summary>
+    /// <param name="watchFolderSetting">Settings of the watch folder to find.</param>
+    /// <returns>True if the <see cref="WatchFolder"/> exists, otherwise false.</returns>
+    private bool IsExist(WatchFolderSettings watchFolderSetting)
+    {
+        //...
+    }
+
+    /// <summary>
+    /// Adds a new watch folder based on the provided settings if it does not already exist.
+    /// </summary>
+    /// <param name="watchFolderSetting">Settings for the watch folder to add.</param>
+    /// <param name="taskSettings">Task settings associated with the watch folder to add.</param>
+    public void AddWatchFolder(WatchFolderSettings watchFolderSetting, TaskSettings taskSettings)
+    {
+        //...
+    }
+
+    /// <summary>
+    /// Removes the watch folder that matches the provided settings.
+    /// </summary>
+    /// <param name="watchFolderSetting">Settings of the watch folder to remove.</param>
+    public void RemoveWatchFolder(WatchFolderSettings watchFolderSetting)
+    {
+        //...
+    }
+
+    /// <summary>
+    /// Updates the state of a watch folder that matches the provided settings.
+    /// </summary>
+    /// <param name="watchFolderSetting">Settings of the watch folder to update.</param>
+    public void UpdateWatchFolderState(WatchFolderSettings watchFolderSetting)
+    {
+        //...
+    }
+
+    /// <summary>
+    /// Unregisters all the watch folders currently managed by this instance.
+    /// </summary>
+    public void UnregisterAllWatchFolders()
+    {
+        //...
+    }
+
+    /// <summary>
+    /// Performs application-defined tasks associated with freeing, releasing, or resetting unmanaged resources.
+    /// Here it unregisters all watch folders.
+    /// </summary>
+    public void Dispose()
+    {
+        //...
+    }
+}
