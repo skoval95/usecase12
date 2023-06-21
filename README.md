@@ -1,0 +1,1 @@
+The `WatchFolderManager` class manages the watching of folders for changes and performs actions based on those changes.
